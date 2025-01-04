@@ -77,6 +77,42 @@ add_expense() {
     fi
 }
 
+# Function to Delete Expense
+delete_expense() {
+    # Check if the user's expense file exists and has records (excluding the header)
+    if [[ ! -f "expenses_$logged_in_user.csv" || $(wc -l <"expenses_$logged_in_user.csv") -le 1 ]]; then
+        zenity --warning --text="📂 No expenses found. Please add some expenses first." --title="⚠️ No Data"
+        return
+    fi
+
+    # Read expenses into an array, skipping the header
+    mapfile -t expenses < <(tail -n +2 "expenses_$logged_in_user.csv")
+
+    # Prepare the list for Zenity
+    list=()
+    for expense in "${expenses[@]}"; do
+        IFS=',' read -r description amount date <<<"$expense"
+        list+=("$expense")
+    done
+
+    # Display the list in Zenity for selection
+    selected_expense=$(zenity --list --title="🗑️ Delete Expense" --text="Select an expense to delete:" \
+        --column="Expenses" "${list[@]}")
+
+    # Check if a valid selection was made
+    if [[ $? -eq 0 && -n "$selected_expense" ]]; then
+        # Escape special characters for sed
+        selected_expense=$(echo "$selected_expense" | sed -e 's/[\&/]/\\&/g')
+
+        # Use sed to delete the selected line from the CSV file
+        sed -i "/^$selected_expense\$/d" "expenses_$logged_in_user.csv"
+
+        zenity --info --text="✅ Expense deleted successfully!" --title="Success"
+    else
+        zenity --warning --text="⚠️ No expense selected. Operation canceled." --title="⚠️ Warning"
+    fi
+}
+
 # Function to View Expenses
 view_expenses() {
     if [[ ! -s "expenses_$logged_in_user.csv" || $(wc -l <"expenses_$logged_in_user.csv") -le 1 ]]; then
@@ -103,7 +139,7 @@ main_menu() {
     while true; do
         user_action=$(zenity --list --title="🏠 Main Menu" --text="Choose an action:" \
             --column="🚀 Actions" \
-            "💸 Add Expense" "📋 View Expenses" "💾 Export Report" "🔒 Logout" --window-icon="info")
+            "💸 Add Expense" "📋 View Expenses" "🗑️ Delete Expense" "💾 Export Report" "🔒 Logout" --window-icon="info")
 
         case "$user_action" in
         "💸 Add Expense")
@@ -111,6 +147,9 @@ main_menu() {
             ;;
         "📋 View Expenses")
             view_expenses
+            ;;
+        "🗑️ Delete Expense")
+            delete_expense
             ;;
         "💾 Export Report")
             export_report
