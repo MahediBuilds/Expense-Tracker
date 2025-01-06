@@ -77,42 +77,6 @@ add_expense() {
     fi
 }
 
-# Function to Delete Expense
-delete_expense() {
-    # Check if the user's expense file exists and has records (excluding the header)
-    if [[ ! -f "expenses_$logged_in_user.csv" || $(wc -l <"expenses_$logged_in_user.csv") -le 1 ]]; then
-        zenity --warning --text="📂 No expenses found. Please add some expenses first." --title="⚠️ No Data"
-        return
-    fi
-
-    # Read expenses into an array, skipping the header
-    mapfile -t expenses < <(tail -n +2 "expenses_$logged_in_user.csv")
-
-    # Prepare the list for Zenity
-    list=()
-    for expense in "${expenses[@]}"; do
-        IFS=',' read -r description amount date <<<"$expense"
-        list+=("$expense")
-    done
-
-    # Display the list in Zenity for selection
-    selected_expense=$(zenity --list --title="🗑️ Delete Expense" --text="Select an expense to delete:" \
-        --column="Expenses" "${list[@]}")
-
-    # Check if a valid selection was made
-    if [[ $? -eq 0 && -n "$selected_expense" ]]; then
-        # Escape special characters for sed
-        selected_expense=$(echo "$selected_expense" | sed -e 's/[\&/]/\\&/g')
-
-        # Use sed to delete the selected line from the CSV file
-        sed -i "/^$selected_expense\$/d" "expenses_$logged_in_user.csv"
-
-        zenity --info --text="✅ Expense deleted successfully!" --title="Success"
-    else
-        zenity --warning --text="⚠️ No expense selected. Operation canceled." --title="⚠️ Warning"
-    fi
-}
-
 # Function to View Expenses
 view_expenses() {
     if [[ ! -s "expenses_$logged_in_user.csv" || $(wc -l <"expenses_$logged_in_user.csv") -le 1 ]]; then
@@ -120,10 +84,81 @@ view_expenses() {
         return
     fi
 
-    zenity --list --title="📋 View Expenses" --text="Here are your recorded expenses:" \
+    # Extract unique months and years from the data
+    declare -A month_year_map
+    while IFS=',' read -r description amount date; do
+        if [[ -n "$description" && -n "$amount" && -n "$date" ]]; then
+            month=$(date -d "$date" +"%B" 2>/dev/null || echo "Invalid Date")
+            year=$(date -d "$date" +"%Y" 2>/dev/null || echo "Invalid Date")
+            if [[ $month != "Invalid Date" && $year != "Invalid Date" ]]; then
+                month_year_map["$month"]+="$year "
+            fi
+        fi
+    done < <(tail -n +2 "expenses_$logged_in_user.csv")
+
+    # Sort months in calendar order
+    calendar_order=(January February March April May June July August September October November December)
+    sorted_months=()
+    for month in "${calendar_order[@]}"; do
+        if [[ -n "${month_year_map[$month]}" ]]; then
+            sorted_months+=("$month")
+        fi
+    done
+
+    if [[ ${#sorted_months[@]} -eq 0 ]]; then
+        zenity --warning --text="No months with expenses found." --title="⚠️ No Data" --window-icon="warning"
+        return
+    fi
+
+    # Select month using dropdown
+    selected_month=$(zenity --list --title="📅 Select Month" --text="Choose a month to view expenses:" \
+        --column="Month" "${sorted_months[@]}" --width=300 --height=400 --window-icon="calendar")
+
+    if [[ -z "$selected_month" ]]; then
+        zenity --info --text="No month selected. Exiting..." --title="ℹ️ Info" --window-icon="info"
+        return
+    fi
+
+    # Extract unique years for the selected month
+    unique_years=($(printf "%s\n" ${month_year_map[$selected_month]} | tr ' ' '\n' | sort -u))
+
+    if [[ ${#unique_years[@]} -eq 0 ]]; then
+        zenity --warning --text="No years found for $selected_month." --title="⚠️ No Data" --window-icon="warning"
+        return
+    fi
+
+    # Select year using dropdown
+    selected_year=$(zenity --list --title="📅 Select Year" --text="Choose a year to view expenses:" \
+        --column="Year" "${unique_years[@]}" --width=300 --height=400 --window-icon="calendar")
+
+    if [[ -z "$selected_year" ]]; then
+        zenity --info --text="No year selected. Exiting..." --title="ℹ️ Info" --window-icon="info"
+        return
+    fi
+
+    # Filter and display expenses for the selected month and year
+    display_list=()
+    while IFS=',' read -r description amount date; do
+        if [[ -n "$description" && -n "$amount" && -n "$date" ]]; then
+            month=$(date -d "$date" +"%B" 2>/dev/null || echo "Invalid Date")
+            year=$(date -d "$date" +"%Y" 2>/dev/null || echo "Invalid Date")
+            if [[ "$month" == "$selected_month" && "$year" == "$selected_year" ]]; then
+                display_list+=("$description" "₹$amount" "$date")
+            fi
+        fi
+    done < <(tail -n +2 "expenses_$logged_in_user.csv")
+
+    if [[ ${#display_list[@]} -eq 0 ]]; then
+        zenity --warning --text="No expenses found for $selected_month $selected_year." --title="⚠️ No Data" --window-icon="warning"
+        return
+    fi
+
+    zenity --list --title="📋 View Expenses" --text="Expenses for $selected_month $selected_year:" \
         --column="📝 Description" --column="💰 Amount" --column="📅 Date" \
-        $(tail -n +2 "expenses_$logged_in_user.csv" | awk -F, '{print $1 " " $2 " " $3}' | tr '\n' ' ') --window-icon="info"
+        "${display_list[@]}" --width=800 --height=600 --window-icon="info"
 }
+
+
 
 # Function to Export Report
 export_report() {
