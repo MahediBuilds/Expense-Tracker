@@ -1,13 +1,11 @@
 #!/bin/bash
 
-# Ensure necessary CSV files exist
 initialize_files() {
     if [[ ! -f users.csv ]]; then
         echo "Username,Password" >users.csv
     fi
 }
 
-# Function for Login
 login() {
     username=$(zenity --entry --title="🔑 Login" --text="👤 Enter your username:" --window-icon="info")
     password=$(zenity --password --title="🔑 Login" --text="🔒 Enter your password:" --window-icon="info")
@@ -23,7 +21,6 @@ login() {
     fi
 }
 
-# Function for Signup
 signup() {
     user_data=$(zenity --forms --title="✍️ Sign Up" --text="Create a new account" \
         --add-entry="👤 Username" \
@@ -53,14 +50,12 @@ signup() {
     fi
 }
 
-# Initialize the user's expenses file
 initialize_user_expenses() {
     if [[ ! -f "expenses_$logged_in_user.csv" ]]; then
         echo "Description,Amount,Date" >"expenses_$logged_in_user.csv"
     fi
 }
 
-# Function to Add Expense
 add_expense() {
     expense_data=$(zenity --forms --title="💸 Add Expense" --text="Enter expense details below:" \
         --add-entry="📝 Description" \
@@ -77,14 +72,12 @@ add_expense() {
     fi
 }
 
-# Function to View Expenses
-view_expenses() {
+delete_expense() {
     if [[ ! -s "expenses_$logged_in_user.csv" || $(wc -l <"expenses_$logged_in_user.csv") -le 1 ]]; then
         zenity --warning --text="📂 No expenses found. Please add some expenses first." --title="⚠️ No Data" --window-icon="warning"
         return
     fi
 
-    # Extract unique months and years from the data
     declare -A month_year_map
     while IFS=',' read -r description amount date; do
         if [[ -n "$description" && -n "$amount" && -n "$date" ]]; then
@@ -96,7 +89,6 @@ view_expenses() {
         fi
     done < <(tail -n +2 "expenses_$logged_in_user.csv")
 
-    # Sort months in calendar order
     calendar_order=(January February March April May June July August September October November December)
     sorted_months=()
     for month in "${calendar_order[@]}"; do
@@ -110,8 +102,7 @@ view_expenses() {
         return
     fi
 
-    # Select month using dropdown
-    selected_month=$(zenity --list --title="📅 Select Month" --text="Choose a month to view expenses:" \
+    selected_month=$(zenity --list --title="📅 Select Month" --text="Choose a month to delete expenses:" \
         --column="Month" "${sorted_months[@]}" --width=300 --height=400 --window-icon="calendar")
 
     if [[ -z "$selected_month" ]]; then
@@ -119,7 +110,6 @@ view_expenses() {
         return
     fi
 
-    # Extract unique years for the selected month
     unique_years=($(printf "%s\n" ${month_year_map[$selected_month]} | tr ' ' '\n' | sort -u))
 
     if [[ ${#unique_years[@]} -eq 0 ]]; then
@@ -127,8 +117,7 @@ view_expenses() {
         return
     fi
 
-    # Select year using dropdown
-    selected_year=$(zenity --list --title="📅 Select Year" --text="Choose a year to view expenses:" \
+    selected_year=$(zenity --list --title="📅 Select Year" --text="Choose a year to delete expenses:" \
         --column="Year" "${unique_years[@]}" --width=300 --height=400 --window-icon="calendar")
 
     if [[ -z "$selected_year" ]]; then
@@ -136,7 +125,6 @@ view_expenses() {
         return
     fi
 
-    # Filter and display expenses for the selected month and year
     display_list=()
     while IFS=',' read -r description amount date; do
         if [[ -n "$description" && -n "$amount" && -n "$date" ]]; then
@@ -153,14 +141,101 @@ view_expenses() {
         return
     fi
 
-    zenity --list --title="📋 View Expenses" --text="Expenses for $selected_month $selected_year:" \
+    selected_expense=$(zenity --list --title="🗑️ Delete Expense" --text="Select an expense to delete:" \
+        --column="📝 Description" --column="💰 Amount" --column="📅 Date" \
+        "${display_list[@]}" --width=800 --height=600 --window-icon="info")
+
+    if [[ -z "$selected_expense" ]]; then
+        zenity --info --text="⚠️ No expense selected. Operation canceled." --title="ℹ️ Info" --window-icon="info"
+        return
+    fi
+
+    description=$(echo "$selected_expense" | awk -F '|' '{print $1}' | xargs)
+    amount=$(echo "$selected_expense" | awk -F '|' '{print $2}' | xargs | sed 's/₹//')
+    date=$(echo "$selected_expense" | awk -F '|' '{print $3}' | xargs)
+
+    sed -i "/^$description,$amount,$date\$/d" "expenses_$logged_in_user.csv"
+    zenity --info --text="✅ Expense deleted successfully!" --title="Success" --window-icon="info"
+}
+
+
+view_expenses() {
+    if [[ ! -s "expenses_$logged_in_user.csv" || $(wc -l <"expenses_$logged_in_user.csv") -le 1 ]]; then
+        zenity --warning --text="📂 No expenses found. Please add some expenses first." --title="⚠️ No Data" --window-icon="warning"
+        return
+    fi
+
+    declare -A month_year_map
+    while IFS=',' read -r description amount date; do
+        if [[ -n "$description" && -n "$amount" && -n "$date" ]]; then
+            month=$(date -d "$date" +"%B" 2>/dev/null || echo "Invalid Date")
+            year=$(date -d "$date" +"%Y" 2>/dev/null || echo "Invalid Date")
+            if [[ $month != "Invalid Date" && $year != "Invalid Date" ]]; then
+                month_year_map["$month"]+="$year "
+            fi
+        fi
+    done < <(tail -n +2 "expenses_$logged_in_user.csv")
+
+    calendar_order=(January February March April May June July August September October November December)
+    sorted_months=()
+    for month in "${calendar_order[@]}"; do
+        if [[ -n "${month_year_map[$month]}" ]]; then
+            sorted_months+=("$month")
+        fi
+    done
+
+    if [[ ${#sorted_months[@]} -eq 0 ]]; then
+        zenity --warning --text="No months with expenses found." --title="⚠️ No Data" --window-icon="warning"
+        return
+    fi
+
+    selected_month=$(zenity --list --title="📅 Select Month" --text="Choose a month to view expenses:" \
+        --column="Month" "${sorted_months[@]}" --width=300 --height=400 --window-icon="calendar")
+
+    if [[ -z "$selected_month" ]]; then
+        zenity --info --text="No month selected. Exiting..." --title="ℹ️ Info" --window-icon="info"
+        return
+    fi
+
+    unique_years=($(printf "%s\n" ${month_year_map[$selected_month]} | tr ' ' '\n' | sort -u))
+
+    if [[ ${#unique_years[@]} -eq 0 ]]; then
+        zenity --warning --text="No years found for $selected_month." --title="⚠️ No Data" --window-icon="warning"
+        return
+    fi
+
+    selected_year=$(zenity --list --title="📅 Select Year" --text="Choose a year to view expenses:" \
+        --column="Year" "${unique_years[@]}" --width=300 --height=400 --window-icon="calendar")
+
+    if [[ -z "$selected_year" ]]; then
+        zenity --info --text="No year selected. Exiting..." --title="ℹ️ Info" --window-icon="info"
+        return
+    fi
+
+    display_list=()
+    total_spent=0
+    while IFS=',' read -r description amount date; do
+        if [[ -n "$description" && -n "$amount" && -n "$date" ]]; then
+            month=$(date -d "$date" +"%B" 2>/dev/null || echo "Invalid Date")
+            year=$(date -d "$date" +"%Y" 2>/dev/null || echo "Invalid Date")
+            if [[ "$month" == "$selected_month" && "$year" == "$selected_year" ]]; then
+                display_list+=("$description" "₹$amount" "$date")
+                total_spent=$(awk "BEGIN {print $total_spent + $amount}")
+            fi
+        fi
+    done < <(tail -n +2 "expenses_$logged_in_user.csv")
+
+    if [[ ${#display_list[@]} -eq 0 ]]; then
+        zenity --warning --text="No expenses found for $selected_month $selected_year." --title="⚠️ No Data" --window-icon="warning"
+        return
+    fi
+
+    zenity --list --title="📋 View Expenses" --text="Expenses for $selected_month $selected_year:\n\n💰 Total Spent: ₹$total_spent" \
         --column="📝 Description" --column="💰 Amount" --column="📅 Date" \
         "${display_list[@]}" --width=800 --height=600 --window-icon="info"
 }
 
 
-
-# Function to Export Report
 export_report() {
     save_path=$(zenity --file-selection --save --title="💾 Export Report" --filename="expenses_${logged_in_user}_report.csv" --window-icon="info")
     if [[ $? -eq 0 ]]; then
@@ -202,7 +277,6 @@ main_menu() {
     done
 }
 
-# Main Script Execution
 initialize_files
 while true; do
     user_action=$(zenity --list --title="📊 Expense Tracker" --text="Welcome to Expense Tracker! Please choose an option:" \
