@@ -1,0 +1,25 @@
+[2025-01-12 06:59:36] Initializing users.csv if not present.
+[2025-01-12 06:59:36] Displaying initial menu.
+[2025-01-12 06:59:37] User attempting login.
+[2025-01-12 06:59:42] Login successful for user: zain
+[2025-01-12 06:59:43] Initializing expenses file for user: zain
+[2025-01-12 06:59:43] Displaying main menu for user: zain
+[2025-01-12 06:59:50] User logged out: zain
+[2025-01-12 06:59:50] Displaying initial menu.
+[2025-01-12 06:59:54] User exited the application.
+[2025-01-12 07:04:01] Initializing users.csv if not present.
+[2025-01-12 07:04:01] Displaying initial menu.
+[2025-01-12 07:04:03] User attempting login.
+[2025-01-12 07:04:09] Login successful for user: zain
+[2025-01-12 07:04:10] Initializing expenses file for user: zain
+[2025-01-12 07:04:10] Displaying main menu for user: zain
+[2025-01-12 07:04:15] User logged out: zain
+[2025-01-12 07:04:15] Displaying initial menu.
+[2025-01-12 07:04:20] User exited the application.
+[2025-01-12 07:14:31] Initializing users.csv if not present.
+[2025-01-12 07:14:31] Displaying initial menu.
+[2025-01-12 07:14:34] User attempting login.
+[2025-01-12 07:14:38] Login failed for user: 
+[2025-01-12 07:14:40] Displaying initial menu.
+[2025-01-12 07:14:41] User attempting signup.
+[2025-01-12 11:55:40] Displaying initial menu.
