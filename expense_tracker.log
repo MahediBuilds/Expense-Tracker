@@ -92,3 +92,36 @@
 [2025-01-13 11:31:39] Viewing expenses for user: zain
 [2025-01-13 11:31:44] Displaying expenses for January 2024.
 [2025-01-13 11:39:43] Displaying main menu for user: zain
+[2025-01-27 10:28:02] Initializing users.csv if not present.
+[2025-01-27 10:28:02] Displaying initial menu.
+[2025-01-27 10:28:06] User attempting login.
+[2025-01-27 10:28:11] Login successful for user: zain
+[2025-01-27 10:28:12] Initializing expenses file for user: zain
+[2025-01-27 10:28:12] Displaying main menu for user: zain
+[2025-01-27 10:28:13] Adding expense for user: zain
+[2025-01-27 10:28:43] Expense added: Biryani, 1300, 01/26/2025
+[2025-01-27 10:28:47] Displaying main menu for user: zain
+[2025-01-27 10:28:51] Viewing expenses for user: zain
+[2025-01-27 10:28:57] Displaying expenses for January 2025.
+[2025-01-27 10:29:00] Displaying main menu for user: zain
+[2025-01-27 10:29:03] Deleting expense for user: zain
+[2025-01-27 10:29:10] Deleting expense: Biryani, 1300, 01/26/2025
+[2025-01-27 10:29:12] Displaying main menu for user: zain
+[2025-01-27 10:29:14] Deleting expense for user: zain
+[2025-01-27 10:29:17] No year selected while deleting.
+[2025-01-27 10:29:18] Displaying main menu for user: zain
+[2025-01-27 10:29:19] Viewing expenses for user: zain
+[2025-01-27 10:29:23] Displaying expenses for January 2024.
+[2025-01-27 10:29:27] Displaying main menu for user: zain
+[2025-01-27 10:29:30] Exporting report for user: zain
+[2025-01-27 10:29:40] Report exported successfully to /home/mahedibuilds/Desktop/new1
+[2025-01-27 10:29:50] Displaying main menu for user: zain
+[2025-01-27 10:31:59] User logged out: zain
+[2025-01-27 10:31:59] Displaying initial menu.
+[2025-01-27 10:32:00] User attempting login.
+[2025-01-27 10:32:05] Login failed for user: ghjkl
+[2025-01-27 10:32:07] Displaying initial menu.
+[2025-01-27 10:32:09] User attempting signup.
+[2025-01-27 10:32:17] Signup failed: username already exists.
+[2025-01-27 10:32:19] Displaying initial menu.
+[2025-01-27 10:32:24] User exited the application.
